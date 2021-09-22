@@ -108,7 +108,7 @@ namespace RPCSanity
 
             SceneManager.add_sceneUnloaded(new Action<Scene>(s => _rateLimiter.CleanupAfterDeparture()));
 
-            foreach (var nestedType in typeof(VRC_EventLog).GetNestedTypes())
+            foreach (var nestedType in typeof(MonoBehaviour2PublicSiInBoSiObLiOb1PrDoUnique).GetNestedTypes())
             {
                 foreach (var methodInfo in nestedType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
                 {
@@ -205,7 +205,7 @@ namespace RPCSanity
             if (!BinarySerializer.Method_Public_Static_Boolean_ArrayOf_Byte_byref_Object_0(bytes.ToArray(), out var obj)) // BinarySerializer.Deserialize(byte[] bytes, out object result)
                 return true; // we can't parse this. neither can vrchat. drop it now.
 
-            var evtLogEntry = obj.TryCast<VRC_EventLog.ObjectNPublicInVrInStSiObSiByVrBoUnique>();
+            var evtLogEntry = obj.TryCast<MonoBehaviour2PublicSiInBoSiObLiOb1PrDoUnique.ObjectNPublicInVrInStSiInObSiByVrUnique>();
             var vrcEvent = evtLogEntry.field_Private_VrcEvent_0;
 
             if (vrcEvent.EventType > VRC_EventHandler.VrcEventType.CallUdonMethod) // EventType can't be higher than the enum. That's bullshit.
