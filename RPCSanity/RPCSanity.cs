@@ -18,7 +18,7 @@ namespace RPCSanity
         public const string Name = "RPCSanity";
         public const string Author = "Requi";
         public const string Company = null;
-        public const string Version = "1.0.0";
+        public const string Version = "1.0.1";
         public const string DownloadLink = "https://github.com/RequiDev/RPCSanity/";
     }
 
