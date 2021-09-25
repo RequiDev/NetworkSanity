@@ -15,74 +15,27 @@ namespace RPCSanity
 {
     public static class BuildInfo
     {
-        public const string Name = "RPCSanity";
-        public const string Author = "Requi";
+        public const string Name = "RPCSanityNative";
+        public const string Author = "Requi (Native By OptoCloud)";
         public const string Company = null;
         public const string Version = "1.0.1";
-        public const string DownloadLink = "https://github.com/RequiDev/RPCSanity/";
+        public const string DownloadLink = "https://github.com/OptoCloud/RPCSanityNative";
     }
 
     public class RPCSanity : MelonMod
     {
-        private static RateLimiter _rateLimiter;
-
-        private Dictionary<string, (int, int)> _ratelimitValues = new()
-        {
-            { "Generic", (500, 500) },
-            { "ReceiveVoiceStatsSyncRPC", (348, 64) },
-            { "InformOfBadConnection", (64, 6) },
-            { "initUSpeakSenderRPC", (256, 6) },
-            { "InteractWithStationRPC", (128, 32) },
-            { "SpawnEmojiRPC", (128, 6) },
-            { "SanityCheck", (256, 32) },
-            { "PlayEmoteRPC", (256, 6) },
-            { "TeleportRPC", (256, 16) },
-            { "CancelRPC", (256, 32) },
-            { "SetTimerRPC", (256, 64) },
-            { "_DestroyObject", (512, 128) },
-            { "_InstantiateObject", (512, 128) },
-            { "_SendOnSpawn", (512, 128) },
-            { "ConfigurePortal", (512, 128) },
-            { "UdonSyncRunProgramAsRPC", (512, 128) }, // <--- Udon is gay
-            { "ChangeVisibility", (128, 12) },
-            { "PhotoCapture", (128, 32) },
-            { "TimerBloop", (128, 16) },
-            { "ReloadAvatarNetworkedRPC", (128, 12) },
-            { "InternalApplyOverrideRPC", (512, 128) },
-            { "AddURL", (64, 6) },
-            { "Play", (64, 6) },
-            { "Pause", (64, 6) },
-            { "SendVoiceSetupToPlayerRPC", (512, 6) },
-            { "SendStrokeRPC", (512, 32) }
-        };
-
-        private static readonly Dictionary<string, int> _rpcParameterCount = new()
-        {
-            { "ReceiveVoiceStatsSyncRPC", 3 },
-            { "InformOfBadConnection", 2 },
-            { "initUSpeakSenderRPC", 1 },
-            { "InteractWithStationRPC", 1 },
-            { "SpawnEmojiRPC", 1 },
-            { "SanityCheck", 3 },
-            { "PlayEmoteRPC", 1 },
-            { "CancelRPC", 0 },
-            { "SetTimerRPC", 1 },
-            { "_DestroyObject", 1 },
-            { "_InstantiateObject", 4 },
-            { "_SendOnSpawn", 1 },
-            { "ConfigurePortal", 3 },
-            { "UdonSyncRunProgramAsRPC", 1 },
-            { "ChangeVisibility", 1 },
-            { "PhotoCapture", 0 },
-            { "TimerBloop", 0 },
-            { "ReloadAvatarNetworkedRPC", 0 },
-            { "InternalApplyOverrideRPC", 1 },
-            { "AddURL", 1 },
-            { "Play", 0 },
-            { "Pause", 0 },
-            { "SendVoiceSetupToPlayerRPC", 0 },
-            { "SendStrokeRPC", 1 }
-        };
+        [DllImport("RPCSanityNative.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern void Native_Initialize();
+        [DllImport("RPCSanityNative.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern void Native_CleanupAfterDeparture();
+        [DllImport("RPCSanityNative.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern bool Native_IsRateLimited(Int32 senderID);
+        [DllImport("RPCSanityNative.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern bool Native_IsSafeSender(Int32 senderID);
+        [DllImport("RPCSanityNative.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern void Native_BlackListSender(Int32 senderID);
+        [DllImport("RPCSanityNative.dll", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+        private static extern Int32 Native_IsSafeToRun(Int32 senderId, string parameterStringPtr, Int32 parameterStringLength, Int32 paramBytesLength);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate void EventDelegate(IntPtr thisPtr, IntPtr eventDataPtr, IntPtr nativeMethodInfo);
@@ -90,23 +43,14 @@ namespace RPCSanity
 
         public override void OnApplicationStart()
         {
-            _rateLimiter = new RateLimiter();
-
-            _ratelimitValues.ToList().ForEach(kv =>
-            {
-                var rpcKey = kv.Key;
-                var (globalLimit, individualLimit) = kv.Value;
-
-                _rateLimiter.OnlyAllowPerSecond($"G_{rpcKey}", globalLimit);
-                _rateLimiter.OnlyAllowPerSecond(rpcKey, individualLimit);
-            });
+            Native_Initialize();
 
             HarmonyInstance.Patch(typeof(LoadBalancingClient).GetMethod(nameof(LoadBalancingClient.OnEvent)),
                 typeof(RPCSanity)
                     .GetMethod(nameof(OnEventPatch), BindingFlags.NonPublic | BindingFlags.Static)
                     .ToNewHarmonyMethod());
 
-            SceneManager.add_sceneUnloaded(new Action<Scene>(s => _rateLimiter.CleanupAfterDeparture()));
+            SceneManager.add_sceneUnloaded(new Action<Scene>(s => Native_CleanupAfterDeparture()));
 
             foreach (var nestedType in typeof(MonoBehaviour2PublicSiInBoSiObLiOb1PrDoUnique).GetNestedTypes())
             {
@@ -171,7 +115,7 @@ namespace RPCSanity
                         return;
                     }
 
-                    if (!_rateLimiter.IsRateLimited(eventData.Sender))
+                    if (!Native_IsRateLimited(eventData.Sender))
                         originalDelegate(thisPtr, eventDataPtr, nativeMethodInfo);
                 }
 
@@ -187,7 +131,7 @@ namespace RPCSanity
         {
             if (__0.Code == 6)
             {
-                return !_rateLimiter.IsRateLimited(__0.Sender);
+                return !Native_IsRateLimited(__0.Sender);
             }
 
             return true;
@@ -195,11 +139,8 @@ namespace RPCSanity
 
         private bool IsRPCBad(EventData eventData)
         {
-            if (_rateLimiter.IsRateLimited(eventData.Sender))
+            if (!Native_IsSafeSender(eventData.Sender))
                 return true;
-
-            if (!_rateLimiter.IsSafeToRun("Generic", 0))
-                return true; // Failsafe to prevent extremely high amounts of RPCs passing through
 
             var bytes = eventData.CustomData.Cast<Il2CppArrayBase<byte>>();
             if (!BinarySerializer.Method_Public_Static_Boolean_ArrayOf_Byte_byref_Object_0(bytes.ToArray(), out var obj)) // BinarySerializer.Deserialize(byte[] bytes, out object result)
@@ -210,46 +151,27 @@ namespace RPCSanity
 
             if (vrcEvent.EventType > VRC_EventHandler.VrcEventType.CallUdonMethod) // EventType can't be higher than the enum. That's bullshit.
             {
-                _rateLimiter.BlacklistUser(eventData.Sender);
-
+                Native_BlackListSender(eventData.Sender);
                 return true;
             }
 
             if (vrcEvent.EventType != VRC_EventHandler.VrcEventType.SendRPC)
                 return false;
 
-            if (!_rateLimiter.IsSafeToRun($"G_{vrcEvent.ParameterString}", 0)
-                || !_rateLimiter.IsSafeToRun(vrcEvent.ParameterString, eventData.Sender))
-                return true;
-
-            if (!_rpcParameterCount.ContainsKey(vrcEvent.ParameterString))
-            {
-                return false; // we don't have any information about this RPC. Let it slide.
-            }
-
-            var paramCount = _rpcParameterCount[vrcEvent.ParameterString];
-            if (paramCount == 0 && vrcEvent.ParameterBytes.Length > 0)
-            {
-                _rateLimiter.BlacklistUser(eventData.Sender);
-                return true;
-            }
-
-            if (paramCount > 0 && vrcEvent.ParameterBytes.Length == 0)
-            {
-                _rateLimiter.BlacklistUser(eventData.Sender);
-                return true;
-            }
+            Int32 rc = Native_IsSafeToRun(eventData.Sender, vrcEvent.ParameterString, vrcEvent.ParameterString.Length, vrcEvent.ParameterBytes.Length);
+            if (rc < 0)
+                return rc == -1 ? true : false;
 
             var parameters = ParameterSerialization.Method_Public_Static_ArrayOf_Object_ArrayOf_Byte_0(vrcEvent.ParameterBytes); // ParameterSerialization.Decode(byte[] data). Technically just calls BinarySerializer under the hood, but checks a few more things.
             if (parameters == null)
             {
-                _rateLimiter.BlacklistUser(eventData.Sender);
+                Native_BlackListSender(eventData.Sender);
                 return true;
             }
 
-            if (parameters.Length != paramCount)
+            if (parameters.Length != rc)
             {
-                _rateLimiter.BlacklistUser(eventData.Sender);
+                Native_BlackListSender(eventData.Sender);
                 return true;
             }
 
@@ -257,7 +179,7 @@ namespace RPCSanity
 
             if (go == null && vrcEvent.ParameterString != "ConfigurePortal") // ConfigurePortal might be sent before VRChat processed InstantiateObject resulting in the portal being deleted.
             {
-                _rateLimiter.BlacklistUser(eventData.Sender);
+                Native_BlackListSender(eventData.Sender);
                 return true;
             }
 
