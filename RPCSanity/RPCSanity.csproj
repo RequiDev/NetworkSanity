@@ -75,7 +75,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RateLimiter.cs" />
     <Compile Include="RPCSanity.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
