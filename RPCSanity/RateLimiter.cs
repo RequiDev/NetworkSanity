@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
+using UnityEngine.SceneManagement;
 
 namespace RPCSanity
 {
@@ -167,6 +168,11 @@ namespace RPCSanity
             AllowedSendsPerSecond = new Dictionary<string, int>();
             BlacklistedUsers = new HashSet<int>();
             CurrentTime = DateTime.Now;
+
+            SceneManager.add_sceneUnloaded(new Action<Scene>(s =>
+            {
+                CleanupAfterDeparture();
+            }));
         }
     }
 }
