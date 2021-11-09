@@ -22,7 +22,7 @@ namespace RPCSanity
         public const string Name = "RPCSanity";
         public const string Author = "Requi";
         public const string Company = null;
-        public const string Version = "1.0.2";
+        public const string Version = "1.0.3";
         public const string DownloadLink = "https://github.com/RequiDev/RPCSanity/";
     }
 
@@ -326,12 +326,12 @@ namespace RPCSanity
             switch (__0.Code)
             {
                 case 6:
-                    return _rateLimiter.IsRateLimited(__0.Sender);
+                    return !_rateLimiter.IsRateLimited(__0.Sender);
                 case 7:
                 case 9:
-                    return _otherRateLimiter.IsRateLimited(__0.Sender);
+                    return !_otherRateLimiter.IsRateLimited(__0.Sender);
                 default:
-                    return false;
+                    return true;
             }
         }
 
