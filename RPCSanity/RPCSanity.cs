@@ -22,7 +22,7 @@ namespace RPCSanity
         public const string Name = "RPCSanity";
         public const string Author = "Requi";
         public const string Company = null;
-        public const string Version = "1.0.3";
+        public const string Version = "1.0.4";
         public const string DownloadLink = "https://github.com/RequiDev/RPCSanity/";
     }
 
@@ -343,11 +343,20 @@ namespace RPCSanity
             if (!_rateLimiter.IsSafeToRun("Generic", 0))
                 return true; // Failsafe to prevent extremely high amounts of RPCs passing through
 
-            var bytes = eventData.CustomData.Cast<Il2CppArrayBase<byte>>();
-            if (!BinarySerializer.Method_Public_Static_Boolean_ArrayOf_Byte_byref_Object_0(bytes.ToArray(), out var obj)) // BinarySerializer.Deserialize(byte[] bytes, out object result)
-                return true; // we can't parse this. neither can vrchat. drop it now.
+            Il2CppSystem.Object obj;
+            try
+            {
+                var bytes = Il2CppArrayBase<byte>.WrapNativeGenericArrayPointer(eventData.CustomData.Pointer);
+                if (!BinarySerializer.Method_Public_Static_Boolean_ArrayOf_Byte_byref_Object_0(bytes.ToArray(), out obj))
+                    return true; // we can't parse this. neither can vrchat. drop it now.
+            }
+            catch (Il2CppException)
+            {
+                _rateLimiter.BlacklistUser(eventData.Sender);
+                return true;
+            }
 
-            var evtLogEntry = obj.TryCast<VRC_EventLog.ObjectNPublicInVrInStSiInObSiByVrUnique>();
+            var evtLogEntry = obj.TryCast<VRC_EventLog.EventLogEntry>();
             if (evtLogEntry.field_Private_Int32_1 != eventData.Sender)
             {
                 _rateLimiter.BlacklistUser(eventData.Sender);
@@ -397,6 +406,7 @@ namespace RPCSanity
                 _rateLimiter.BlacklistUser(eventData.Sender);
                 return true;
             }
+
             if (parameters == null)
             {
                 _rateLimiter.BlacklistUser(eventData.Sender);
@@ -409,7 +419,7 @@ namespace RPCSanity
                 return true;
             }
 
-            var go = ObjectPublicAbstractSealedSeVRObGaDaSiInObBoDoUnique.Method_Public_Static_GameObject_String_Boolean_0(evtLogEntry.prop_String_0, true); // Network.FindGameObject(string path, bool suppressErrors)
+            var go = Network.Method_Public_Static_GameObject_String_Boolean_0(evtLogEntry.prop_String_0, true); // Network.FindGameObject(string path, bool suppressErrors)
 
             if (go == null && vrcEvent.ParameterString != "ConfigurePortal") // ConfigurePortal might be sent before VRChat processed InstantiateObject resulting in the portal being deleted.
             {
