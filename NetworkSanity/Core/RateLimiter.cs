@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using UnityEngine.SceneManagement;
 
-namespace RPCSanity
+namespace NetworkSanity.Core
 {
     internal class RateLimiter
     {
