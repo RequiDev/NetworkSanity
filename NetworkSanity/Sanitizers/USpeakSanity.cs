@@ -5,12 +5,27 @@ using MoPhoGames.USpeak.Core;
 using NetworkSanity.Core;
 using Photon.Realtime;
 using UnhollowerBaseLib;
+using UnhollowerRuntimeLib.XrefScans;
 
 namespace NetworkSanity.Sanitizers
 {
     internal class USpeakSanity : ISanitizer
     {
         private readonly RateLimiter _rateLimiter = new RateLimiter();
+
+        private delegate int LoadFrameDelegate(USpeakFrameContainer container, Il2CppStructArray<byte> source, int sourceOffset);
+        private readonly LoadFrameDelegate _loadFrame;
+
+        public USpeakSanity()
+        {
+            _loadFrame = (LoadFrameDelegate)Delegate.CreateDelegate(typeof(LoadFrameDelegate), typeof(USpeakFrameContainer).GetMethods().Single(x =>
+            {
+                if (!x.Name.StartsWith("Method_Public_Int32_ArrayOf_Byte_Int32_") || x.Name.Contains("_PDM_"))
+                    return false;
+
+                return XrefScanner.XrefScan(x).Count(y => y.Type == XrefType.Method && y.TryResolve() != null) == 4;
+            }));
+        }
 
         public bool OnPhotonEvent(LoadBalancingClient loadBalancingClient, EventData eventData)
         {
@@ -45,7 +60,7 @@ namespace NetworkSanity.Sanitizers
             while (sourceOffset < source.Length)
             {
                 var container = new USpeakFrameContainer();
-                var offset = container.Method_Public_Int32_ArrayOf_Byte_Int32_1(source, sourceOffset);
+                var offset = _loadFrame(container, source, sourceOffset);
                 if (offset == -1)
                 {
                     _rateLimiter.BlacklistUser(eventData.Sender);
