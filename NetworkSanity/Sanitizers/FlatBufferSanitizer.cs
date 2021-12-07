@@ -36,7 +36,7 @@ namespace NetworkSanity.Sanitizers
         {
             unsafe
             {
-                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(AvatarPlayableController).GetMethod(nameof(AvatarPlayableController.Method_Public_Virtual_Final_New_Void_ValueTypePublicSealedObInObVoIn711ObInByUnique_Int32_Single_0))).GetValue(null);
+                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(AvatarPlayableController).GetMethod(nameof(AvatarPlayableController.Method_Public_Virtual_Final_New_Void_ValueTypePublicSealedObInOb71In1VoOb711Unique_Int32_Single_0))).GetValue(null);
                 var originalMethodPtr = *(IntPtr*)originalMethod;
 
                 MelonUtils.NativeHookAttach((IntPtr)(&originalMethodPtr), typeof(FlatBufferSanitizer).GetMethod(nameof(AvatarPlayableControllerDecodePatch), BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer());
@@ -50,7 +50,7 @@ namespace NetworkSanity.Sanitizers
 
             unsafe
             {
-                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(SyncPhysics).GetMethod(nameof(SyncPhysics.Method_Public_Virtual_Final_New_Void_ValueTypePublicSealedObInObVoIn711ObInByUnique_Int32_Single_0))).GetValue(null);
+                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(SyncPhysics).GetMethod(nameof(SyncPhysics.Method_Public_Virtual_Final_New_Void_ValueTypePublicSealedObInOb71In1VoOb711Unique_Int32_Single_0))).GetValue(null);
                 var originalMethodPtr = *(IntPtr*)originalMethod;
 
                 MelonUtils.NativeHookAttach((IntPtr)(&originalMethodPtr), typeof(FlatBufferSanitizer).GetMethod(nameof(SyncPhysicsDecodePatch), BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer());
@@ -64,7 +64,7 @@ namespace NetworkSanity.Sanitizers
 
             unsafe
             {
-                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(PoseRecorder).GetMethod(nameof(PoseRecorder.Method_Public_Virtual_Final_New_Void_ValueTypePublicSealedObInObVoIn711ObInByUnique_Int32_Single_0))).GetValue(null);
+                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(PoseRecorder).GetMethod(nameof(PoseRecorder.Method_Public_Virtual_Final_New_Void_ValueTypePublicSealedObInOb71In1VoOb711Unique_Int32_Single_0))).GetValue(null);
                 var originalMethodPtr = *(IntPtr*)originalMethod;
 
                 MelonUtils.NativeHookAttach((IntPtr)(&originalMethodPtr), typeof(FlatBufferSanitizer).GetMethod(nameof(PoseRecorderDecodePatch), BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer());
