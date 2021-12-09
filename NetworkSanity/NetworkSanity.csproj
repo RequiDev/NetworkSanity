@@ -90,7 +90,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Core\ISanitizer.cs" />
     <Compile Include="Sanitizers\FlatBufferSanitizer.cs" />
-    <Compile Include="Sanitizers\USpeakSanity.cs" />
+    <Compile Include="Sanitizers\USpeakSanitizer.cs" />
     <Compile Include="Sanitizers\VrcEventSanitizer.cs" />
   </ItemGroup>
   <ItemGroup />

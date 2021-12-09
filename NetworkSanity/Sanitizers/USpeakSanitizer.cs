@@ -9,14 +9,14 @@ using UnhollowerRuntimeLib.XrefScans;
 
 namespace NetworkSanity.Sanitizers
 {
-    internal class USpeakSanity : ISanitizer
+    internal class USpeakSanitizer : ISanitizer
     {
         private readonly RateLimiter _rateLimiter = new RateLimiter();
 
         private delegate int LoadFrameDelegate(USpeakFrameContainer container, Il2CppStructArray<byte> source, int sourceOffset);
         private readonly LoadFrameDelegate _loadFrame;
 
-        public USpeakSanity()
+        public USpeakSanitizer()
         {
             _loadFrame = (LoadFrameDelegate)Delegate.CreateDelegate(typeof(LoadFrameDelegate), typeof(USpeakFrameContainer).GetMethods().Single(x =>
             {

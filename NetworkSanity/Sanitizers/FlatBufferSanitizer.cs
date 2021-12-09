@@ -6,6 +6,7 @@ using MelonLoader;
 using NetworkSanity.Core;
 using Photon.Realtime;
 using UnhollowerBaseLib;
+using UnhollowerRuntimeLib.XrefScans;
 using UnityEngine;
 using VRC;
 using VRC.Networking;
@@ -34,9 +35,46 @@ namespace NetworkSanity.Sanitizers
 
         public FlatBufferSanitizer()
         {
+            var decodeMethodName = "";
+
+            foreach (var methodInfo in typeof(UdonSync).GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (!string.IsNullOrEmpty(decodeMethodName))
+                    break;
+
+                if (methodInfo.IsAbstract)
+                    continue;
+
+                if (!methodInfo.Name.StartsWith("Method_Public_Virtual_Final_New_Void_ValueTypePublicSealed"))
+                    continue;
+
+                foreach (var xi in XrefScanner.XrefScan(methodInfo))
+                {
+                    if (xi.Type != XrefType.Method)
+                        continue;
+
+                    var resolvedMethod = xi.TryResolve();
+
+                    if (resolvedMethod == null)
+                        continue;
+
+                    if (resolvedMethod.Name == "get_SyncMethod")
+                    {
+                        decodeMethodName = methodInfo.Name;
+                        break;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(decodeMethodName))
+            {
+                MelonLogger.Error("Unable to determine target method name, you'll be unprotected against photon exploits.");
+                return;
+            }
+
             unsafe
             {
-                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(AvatarPlayableController).GetMethod(nameof(AvatarPlayableController.Method_Public_Virtual_Final_New_Void_ValueTypePublicSealedObInOb71In1VoOb711Unique_Int32_Single_0))).GetValue(null);
+                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(AvatarPlayableController).GetMethod(decodeMethodName)).GetValue(null);
                 var originalMethodPtr = *(IntPtr*)originalMethod;
 
                 MelonUtils.NativeHookAttach((IntPtr)(&originalMethodPtr), typeof(FlatBufferSanitizer).GetMethod(nameof(AvatarPlayableControllerDecodePatch), BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer());
@@ -50,7 +88,7 @@ namespace NetworkSanity.Sanitizers
 
             unsafe
             {
-                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(SyncPhysics).GetMethod(nameof(SyncPhysics.Method_Public_Virtual_Final_New_Void_ValueTypePublicSealedObInOb71In1VoOb711Unique_Int32_Single_0))).GetValue(null);
+                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(SyncPhysics).GetMethod(decodeMethodName)).GetValue(null);
                 var originalMethodPtr = *(IntPtr*)originalMethod;
 
                 MelonUtils.NativeHookAttach((IntPtr)(&originalMethodPtr), typeof(FlatBufferSanitizer).GetMethod(nameof(SyncPhysicsDecodePatch), BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer());
@@ -64,7 +102,7 @@ namespace NetworkSanity.Sanitizers
 
             unsafe
             {
-                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(PoseRecorder).GetMethod(nameof(PoseRecorder.Method_Public_Virtual_Final_New_Void_ValueTypePublicSealedObInOb71In1VoOb711Unique_Int32_Single_0))).GetValue(null);
+                var originalMethod = (Il2CppMethodInfo*)(IntPtr)UnhollowerUtils.GetIl2CppMethodInfoPointerFieldForGeneratedMethod(typeof(PoseRecorder).GetMethod(decodeMethodName)).GetValue(null);
                 var originalMethodPtr = *(IntPtr*)originalMethod;
 
                 MelonUtils.NativeHookAttach((IntPtr)(&originalMethodPtr), typeof(FlatBufferSanitizer).GetMethod(nameof(PoseRecorderDecodePatch), BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer());
