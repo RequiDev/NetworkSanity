@@ -29,7 +29,7 @@ namespace NetworkSanity.Sanitizers
 
         public bool OnPhotonEvent(LoadBalancingClient loadBalancingClient, EventData eventData)
         {
-            return eventData.Code == 1 && IsVoicePacketBad(eventData);
+            return eventData.Code == 1 && !IsVoicePacketBad(eventData);
         }
         public bool VRCNetworkingClientOnPhotonEvent(EventData eventData)
         {
