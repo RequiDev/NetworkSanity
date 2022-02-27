@@ -17,52 +17,12 @@ namespace NetworkSanity.Sanitizers
     {
         private readonly RateLimiter _rateLimiter = new RateLimiter();
 
-        private readonly Dictionary<string, (int, int)> _ratelimitValues = new Dictionary<string, (int, int)>()
-        {
-            { "Generic", (500, 500) },
-            { "ReceiveVoiceStatsSyncRPC", (348, 64) },
-            { "InformOfBadConnection", (64, 6) },
-            { "initUSpeakSenderRPC", (256, 6) },
-            { "InteractWithStationRPC", (128, 32) },
-            { "SpawnEmojiRPC", (128, 6) },
-            { "SanityCheck", (256, 32) },
-            { "PlayEmoteRPC", (256, 6) },
-            { "TeleportRPC", (256, 16) },
-            { "CancelRPC", (256, 32) },
-            { "SetTimerRPC", (256, 64) },
-            { "_DestroyObject", (512, 128) },
-            { "_InstantiateObject", (512, 128) },
-            { "_SendOnSpawn", (512, 128) },
-            { "ConfigurePortal", (512, 128) },
-            { "UdonSyncRunProgramAsRPC", (512, 128) }, // <--- Udon is gay
-            { "ChangeVisibility", (128, 12) },
-            { "PhotoCapture", (128, 32) },
-            { "TimerBloop", (128, 16) },
-            { "ReloadAvatarNetworkedRPC", (128, 12) },
-            { "InternalApplyOverrideRPC", (512, 128) },
-            { "AddURL", (64, 6) },
-            { "Play", (64, 6) },
-            { "Pause", (64, 6) },
-            { "SendVoiceSetupToPlayerRPC", (512, 6) },
-            { "SendStrokeRPC", (512, 32) }
-        };
-
-
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate void EventDelegate(IntPtr thisPtr, IntPtr eventDataPtr, IntPtr nativeMethodInfo);
         private readonly List<object> OurPinnedDelegates = new();
 
         public VrcEventSanitizer()
         {
-            foreach (var kv in _ratelimitValues)
-            {
-                var rpcKey = kv.Key;
-                var (globalLimit, individualLimit) = kv.Value;
-
-                _rateLimiter.OnlyAllowPerSecond($"G_{rpcKey}", globalLimit);
-                _rateLimiter.OnlyAllowPerSecond(rpcKey, individualLimit);
-            }
-
             foreach (var nestedType in typeof(VRC_EventLog).GetNestedTypes())
             {
                 foreach (var methodInfo in nestedType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
@@ -106,35 +66,6 @@ namespace NetworkSanity.Sanitizers
             }
         }
 
-        private readonly Dictionary<string, int> _rpcParameterCount = new Dictionary<string, int>
-        {
-            { "ReceiveVoiceStatsSyncRPC", 3 },
-            { "InformOfBadConnection", 2 },
-            { "initUSpeakSenderRPC", 1 },
-            { "InteractWithStationRPC", 1 },
-            { "SpawnEmojiRPC", 1 },
-            { "SanityCheck", 3 },
-            { "PlayEmoteRPC", 1 },
-            { "TeleportRPC", 4 }, // has 2 overloads. don't bother for now until it becomes a problem
-            { "CancelRPC", 0 },
-            { "SetTimerRPC", 1 },
-            { "_DestroyObject", 1 },
-            { "_InstantiateObject", 4 },
-            { "_SendOnSpawn", 1 },
-            { "ConfigurePortal", 3 },
-            { "UdonSyncRunProgramAsRPC", 1 },
-            { "ChangeVisibility", 1 },
-            { "PhotoCapture", 0 },
-            { "TimerBloop", 0 },
-            { "ReloadAvatarNetworkedRPC", 0 },
-            { "InternalApplyOverrideRPC", 1 },
-            { "AddURL", 1 },
-            { "Play", 0 },
-            { "Pause", 0 },
-            { "SendVoiceSetupToPlayerRPC", 0 },
-            { "SendStrokeRPC", 1 }
-        };
-
         public bool OnPhotonEvent(LoadBalancingClient loadBalancingClient, EventData eventData)
         {
             return eventData.Code == 6 && IsRpcBad(eventData);
@@ -154,15 +85,11 @@ namespace NetworkSanity.Sanitizers
             if (_rateLimiter.IsRateLimited(eventData.Sender))
                 return true;
 
-            if (!_rateLimiter.IsSafeToRun("Generic", 0))
-                return true; // Failsafe to prevent extremely high amounts of RPCs passing through
-
             Il2CppSystem.Object obj;
             try
             {
                 var bytes = Il2CppArrayBase<byte>.WrapNativeGenericArrayPointer(eventData.CustomData.Pointer);
-                if (!BinarySerializer.Method_Public_Static_Boolean_ArrayOf_Byte_byref_Object_0(bytes.ToArray(), out obj))
-                    return true; // we can't parse this. neither can vrchat. drop it now.
+                BinarySerializer.Method_Public_Static_Boolean_ArrayOf_Byte_byref_Object_0(bytes.ToArray(), out obj);
             }
             catch (Il2CppException)
             {
@@ -189,29 +116,7 @@ namespace NetworkSanity.Sanitizers
             if (vrcEvent.EventType != VRC_EventHandler.VrcEventType.SendRPC)
                 return false;
 
-            if (!evtLogEntry.prop_String_0.All(c => char.IsLetterOrDigit(c) || c == ':' || c == '/' || char.IsWhiteSpace(c) || c == ' '))
-            {
-                _rateLimiter.BlacklistUser(eventData.Sender);
-                return true;
-            }
-
-            if (!_rateLimiter.IsSafeToRun($"G_{vrcEvent.ParameterString}", 0)
-                || !_rateLimiter.IsSafeToRun(vrcEvent.ParameterString, eventData.Sender))
-                return true;
-
-            if (!_rpcParameterCount.ContainsKey(vrcEvent.ParameterString))
-            {
-                return false; // we don't have any information about this RPC. Let it slide.
-            }
-
-            var paramCount = _rpcParameterCount[vrcEvent.ParameterString];
-            if (paramCount == 0 && vrcEvent.ParameterBytes.Length > 0)
-            {
-                _rateLimiter.BlacklistUser(eventData.Sender);
-                return true;
-            }
-
-            if (paramCount > 0 && vrcEvent.ParameterBytes.Length == 0)
+            if (!evtLogEntry.prop_String_0.All(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c) || c == ':' || c == '/' || c is ' ' or '(' || c == ')' || c == '-' || c == '_'))
             {
                 _rateLimiter.BlacklistUser(eventData.Sender);
                 return true;
@@ -229,12 +134,6 @@ namespace NetworkSanity.Sanitizers
             }
 
             if (parameters == null)
-            {
-                _rateLimiter.BlacklistUser(eventData.Sender);
-                return true;
-            }
-
-            if (parameters.Length != paramCount)
             {
                 _rateLimiter.BlacklistUser(eventData.Sender);
                 return true;
