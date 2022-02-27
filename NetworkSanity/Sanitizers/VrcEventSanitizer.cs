@@ -97,6 +97,10 @@ namespace NetworkSanity.Sanitizers
                 return true;
             }
 
+            if (obj == null)
+                return false;
+            
+
             var evtLogEntry = obj.TryCast<VRC_EventLog.EventLogEntry>();
 
             if (evtLogEntry.field_Private_Int32_1 != eventData.Sender)

@@ -17,7 +17,7 @@ namespace NetworkSanity
         public const string Name = "NetworkSanity";
         public const string Author = "Requi";
         public const string Company = null;
-        public const string Version = "1.1.5";
+        public const string Version = "1.1.6";
         public const string DownloadLink = "https://github.com/RequiDev/NetworkSanity/";
     }
 
