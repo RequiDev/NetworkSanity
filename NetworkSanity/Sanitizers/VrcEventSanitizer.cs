@@ -16,6 +16,35 @@ namespace NetworkSanity.Sanitizers
     internal class VrcEventSanitizer : ISanitizer
     {
         private readonly RateLimiter _rateLimiter = new RateLimiter();
+        private readonly Dictionary<string, (int, int)> ratelimitValues = new Dictionary<string, (int, int)>()
+        {
+            { "Generic", (500, 500) },
+            // { "ReceiveVoiceStatsSyncRPC", (348, 64) },
+            { "InformOfBadConnection", (64, 6) },
+            { "initUSpeakSenderRPC", (256, 6) },
+            { "InteractWithStationRPC", (128, 32) },
+            { "SpawnEmojiRPC", (128, 6) },
+            { "SanityCheck", (256, 32) },
+            { "PlayEmoteRPC", (256, 6) },
+            { "TeleportRPC", (256, 16) },
+            { "CancelRPC", (256, 32) },
+            { "SetTimerRPC", (256, 64) },
+            { "_DestroyObject", (512, 128) },
+            { "_InstantiateObject", (512, 128) },
+            { "_SendOnSpawn", (512, 128) },
+            { "ConfigurePortal", (512, 128) },
+            { "UdonSyncRunProgramAsRPC", (512, 128) }, // <--- Udon is gay
+            { "ChangeVisibility", (128, 12) },
+            { "PhotoCapture", (128, 32) },
+            { "TimerBloop", (128, 16) },
+            { "ReloadAvatarNetworkedRPC", (128, 12) },
+            { "InternalApplyOverrideRPC", (512, 128) },
+            { "AddURL", (64, 6) },
+            { "Play", (64, 6) },
+            { "Pause", (64, 6) },
+            { "SendVoiceSetupToPlayerRPC", (512, 6) },
+            { "SendStrokeRPC", (512, 32) }
+        };
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate void EventDelegate(IntPtr thisPtr, IntPtr eventDataPtr, IntPtr nativeMethodInfo);
@@ -23,6 +52,15 @@ namespace NetworkSanity.Sanitizers
 
         public VrcEventSanitizer()
         {
+            foreach (var kv in ratelimitValues)
+            {
+                var rpcKey = kv.Key;
+                var (globalLimit, individualLimit) = kv.Value;
+
+                _rateLimiter.OnlyAllowPerSecond($"G_{rpcKey}", globalLimit);
+                _rateLimiter.OnlyAllowPerSecond(rpcKey, individualLimit);
+            }
+            
             foreach (var nestedType in typeof(VRC_EventLog).GetNestedTypes())
             {
                 foreach (var methodInfo in nestedType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
@@ -85,6 +123,9 @@ namespace NetworkSanity.Sanitizers
             if (_rateLimiter.IsRateLimited(eventData.Sender))
                 return true;
 
+            if (!_rateLimiter.IsSafeToRun("Generic", 0))
+                return true; // Failsafe to prevent extremely high amounts of RPCs passing through
+
             Il2CppSystem.Object obj;
             try
             {
@@ -125,6 +166,10 @@ namespace NetworkSanity.Sanitizers
                 _rateLimiter.BlacklistUser(eventData.Sender);
                 return true;
             }
+
+            if (!_rateLimiter.IsSafeToRun($"G_{vrcEvent.ParameterString}", 0)
+                || !_rateLimiter.IsSafeToRun(vrcEvent.ParameterString, eventData.Sender))
+                return true;
 
             Il2CppReferenceArray<Il2CppSystem.Object> parameters;
             try
